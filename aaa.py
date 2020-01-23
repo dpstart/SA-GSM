@@ -1,2 +1,2 @@
-def diocan(p= 3):
+def diocsan(p= 3):
 	pass
