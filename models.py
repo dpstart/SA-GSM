@@ -83,8 +83,11 @@ class VideoModel(nn.Module):
         import model_zoo
         if base_model == 'BNInception':
             if self.gsm:
-                print('BNInception with GSM')
-                self.base_model = getattr(model_zoo, 'BNInception_gsm')(num_segments=self.num_segments)
+                if self.attention:
+                    print('BNInception with GSM + attention')
+                    self.base_model = getattr(model_zoo, 'BNInception_gsm_attention')(num_segments=self.num_segments)
+                else:
+                    self.base_model = getattr(model_zoo, 'BNInception_gsm')(num_segments=self.num_segments)
             else:
                 self.base_model = getattr(model_zoo, base_model)()
             self.base_model.last_layer_name = 'fc'

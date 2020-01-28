@@ -1,6 +1,6 @@
 import torch
 from torch import nn
-from .layer_factory import get_basic_layer, parse_expr, build_gsm
+from .layer_factory import get_basic_layer, parse_expr, build_gsm, build_attention
 import torch.utils.model_zoo as model_zoo
 import yaml
 
@@ -135,11 +135,11 @@ class BNInception_gsm(nn.Module):
 
     
 
-class BNInception_GSM_attention(nn.Module):
+class BNInception_gsm_attention(nn.Module):
     def __init__(self, model_path='model_zoo/bninception/bn_inception_gsm_attention.yaml', num_classes=101,
                        weight_url='https://yjxiong.blob.core.windows.net/models/bn_inception-9f5701afb96c8044.pth',
                        num_segments=16, attention_type='general'):
-        super(BNInception_gsm, self).__init__()
+        super(BNInception_gsm_attention, self).__init__()
 
         manifest = yaml.load(open(model_path))
 

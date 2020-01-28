@@ -30,8 +30,11 @@ layers:
 - attrs: {kernel_size: 1, num_output: 64}
   expr: inception_3a_1x1<=Convolution<=pool2_3x3_s2
   id: inception_3a_1x1
+- attrs: {dimensions: 256}
+  expr: attention_inception_3a_1x1<=attention<=inception_3a_1x1
+  id: attention_inception_3a_1x1
 - attrs: {fPlane: 64}
-  expr: gsm_inception_3a_1x1<=gsm<=inception_3a_1x1
+  expr: gsm_inception_3a_1x1<=gsm<=attention_inception_3a_1x1
   id: gsm_inception_3a_1x1
 - attrs: {frozen: true}
   expr: inception_3a_1x1_bn<=BN<=gsm_inception_3a_1x1
