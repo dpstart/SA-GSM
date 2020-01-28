@@ -30,6 +30,8 @@ class gsmModule(nn.Module):
         x = x.view(batchSize, self.num_segments, *shape).permute(0, 2, 1, 3, 4).contiguous()
         x_bn = self.bn(x)
         x_bn_relu = self.relu(x_bn)
+
+        # Spatial gating
         gate = self.tanh(self.conv3D(x_bn_relu))
         gate_group1 = gate[:, 0].unsqueeze(1)
         gate_group2 = gate[:, 1].unsqueeze(1)
