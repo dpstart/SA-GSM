@@ -1,5 +1,6 @@
 from torch import nn
-from gsm import gsmModule
+from gsm import GSM
+from attention import Attention
 
 LAYER_BUILDER_DICT=dict()
 
@@ -68,12 +69,20 @@ def build_linear(attr, channels=None, conv_bias=False):
 def build_dropout(attr, channels=None, conv_bias=False):
     return nn.Dropout(p=attr['dropout_ratio']), channels
 
+def build_attention(info, channels=None, conv_bias=False, attention_type='general'):
+    id = info['id']
+    attr = info['attrs'] if 'attrs' in info else list()
+    out, op, in_vars = parse_expr(info['expr'])
+    out_channels = attr['dimensions']
+    attention = Attention(out_channels, attention_type=attention_type)
+    return id, out[0], attention, out_channels, in_vars[0]
+
 def build_gsm(info, channels=None, conv_bias=False, num_segments=3):
     id = info['id']
     attr = info['attrs'] if 'attrs' in info else list()
     out, op, in_vars = parse_expr(info['expr'])
     out_channels = attr['fPlane']
-    gsm = gsmModule(out_channels, num_segments=num_segments)
+    gsm = GSM(out_channels, num_segments=num_segments)
     return id, out[0], gsm, out_channels, in_vars[0]
 
 LAYER_BUILDER_DICT['Convolution'] = build_conv

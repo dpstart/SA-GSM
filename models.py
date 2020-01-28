@@ -2,12 +2,13 @@ from torch import nn
 from ops.basic_ops import ConsensusModule
 from transforms import *
 from torch.nn.init import normal_, constant_
+from attention import Attention
 
 class VideoModel(nn.Module):
     def __init__(self, num_class, num_segments, modality,
                  base_model='BNInception', new_length=None,
                  consensus_type='avg', before_softmax=True,
-                 dropout=0.5, crop_num=1, partial_bn=True, print_spec=True, gsm=False, target_transform=None):
+                 dropout=0.5, crop_num=1, partial_bn=True, print_spec=True, gsm=False, attention=False, target_transform=None):
         super(VideoModel, self).__init__()
         self.modality = modality
         self.num_segments = num_segments
@@ -18,6 +19,7 @@ class VideoModel(nn.Module):
         self.crop_num = crop_num
         self.consensus_type = consensus_type
         self.gsm = gsm
+        self.attention = attention
         self.target_transform = target_transform
 
         if not before_softmax and consensus_type != 'avg':

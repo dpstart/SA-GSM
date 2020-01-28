@@ -4,9 +4,9 @@ import torch
 from torch import nn
 from torch.cuda import FloatTensor as ftens
 
-class gsmModule(nn.Module):
+class GSM(nn.Module):
     def __init__(self, fPlane, num_segments=3):
-        super(gsmModule, self).__init__()
+        super(GSM, self).__init__()
 
         self.conv3D = nn.Conv3d(fPlane, 2, (3, 3, 3), stride=1,
                                 padding=(1, 1, 1), groups=2)

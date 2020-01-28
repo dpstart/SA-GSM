@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 
-
 class Attention(nn.Module):
     """ Applies attention mechanism on the `context` using the `query`.
 
