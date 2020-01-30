@@ -91,8 +91,11 @@ layers:
 - attrs: {kernel_size: 1, num_output: 64}
   expr: inception_3b_1x1<=Convolution<=inception_3a_output
   id: inception_3b_1x1
+- attrs: {dimensions: 256}
+  expr: attention_inception_3b_1x1<=attention<=inception_3b_1x1
+  id: attention_inception_3b_1x1
 - attrs: {fPlane: 64}
-  expr: gsm_inception_3b_1x1<=gsm<=inception_3b_1x1
+  expr: gsm_inception_3b_1x1<=gsm<=attention_inception_3b_1x1
   id: gsm_inception_3b_1x1
 - attrs: {frozen: true}
   expr: inception_3b_1x1_bn<=BN<=gsm_inception_3b_1x1
@@ -149,8 +152,11 @@ layers:
 - attrs: {kernel_size: 1, num_output: 128}
   expr: inception_3c_3x3_reduce<=Convolution<=inception_3b_output
   id: inception_3c_3x3_reduce
+- attrs: {dimensions: 256}
+  expr: attention_inception_3c_1x1<=attention<=inception_3c_3x3_reduce
+  id: attention_inception_3c_1x1
 - attrs: {fPlane: 128}
-  expr: gsm_inception_3c_3x3_reduce<=gsm<=inception_3c_3x3_reduce
+  expr: gsm_inception_3c_3x3_reduce<=gsm<=attention_inception_3c_1x1
   id: gsm_inception_3c_3x3_reduce
 - attrs: {frozen: true}
   expr: inception_3c_3x3_reduce_bn<=BN<=gsm_inception_3c_3x3_reduce
@@ -193,8 +199,11 @@ layers:
 - attrs: {kernel_size: 1, num_output: 224}
   expr: inception_4a_1x1<=Convolution<=inception_3c_output
   id: inception_4a_1x1
+- attrs: {dimensions: 256}
+  expr: attention_inception_4a_1x1<=attention<=inception_4a_1x1
+  id: attention_inception_4a_1x1
 - attrs: {fPlane: 224}
-  expr: gsm_inception_4a_1x1<=gsm<=inception_4a_1x1
+  expr: gsm_inception_4a_1x1<=gsm<=attention_inception_4a_1x1
   id: gsm_inception_4a_1x1
 - attrs: {frozen: true}
   expr: inception_4a_1x1_bn<=BN<=gsm_inception_4a_1x1
@@ -251,8 +260,11 @@ layers:
 - attrs: {kernel_size: 1, num_output: 192}
   expr: inception_4b_1x1<=Convolution<=inception_4a_output
   id: inception_4b_1x1
+- attrs: {dimensions: 256}
+  expr: attention_inception_4b_1x1<=attention<=attention_inception_4b_1x1
+  id: attention_inception_4b_1x1
 - attrs: {fPlane: 192}
-  expr: gsm_inception_4b_1x1<=gsm<=inception_4b_1x1
+  expr: gsm_inception_4b_1x1<=gsm<=attention_inception_4b_1x1
   id: gsm_inception_4b_1x1
 - attrs: {frozen: true}
   expr: inception_4b_1x1_bn<=BN<=gsm_inception_4b_1x1
@@ -309,8 +321,11 @@ layers:
 - attrs: {kernel_size: 1, num_output: 160}
   expr: inception_4c_1x1<=Convolution<=inception_4b_output
   id: inception_4c_1x1
+- attrs: {dimensions: 256}
+  expr: attention_inception_4c_1x1<=attention<=inception_4c_1x1
+  id: attention_inception_4c_1x1
 - attrs: {fPlane: 160}
-  expr: gsm_inception_4c_1x1<=gsm<=inception_4c_1x1
+  expr: gsm_inception_4c_1x1<=gsm<=attention_inception_4c_1x1
   id: gsm_inception_4c_1x1
 - attrs: {frozen: true}
   expr: inception_4c_1x1_bn<=BN<=gsm_inception_4c_1x1
@@ -367,8 +382,11 @@ layers:
 - attrs: {kernel_size: 1, num_output: 96}
   expr: inception_4d_1x1<=Convolution<=inception_4c_output
   id: inception_4d_1x1
+- attrs: {dimensions: 256}
+  expr: attention_inception_4d_1x1<=attention<=inception_4d_1x1
+  id: attention_inception_4d_1x1
 - attrs: {fPlane: 96}
-  expr: gsm_inception_4d_1x1c<=gsm<=inception_4d_1x1
+  expr: gsm_inception_4d_1x1c<=gsm<=attention_inception_4d_1x1
   id: gsm_inception_4d_1x1
 - attrs: {frozen: true}
   expr: inception_4d_1x1_bn<=BN<=gsm_inception_4d_1x1c
@@ -425,8 +443,11 @@ layers:
 - attrs: {kernel_size: 1, num_output: 128}
   expr: inception_4e_3x3_reduce<=Convolution<=inception_4d_output
   id: inception_4e_3x3_reduce
+- attrs: {dimensions: 256}
+  expr: attention_inception_4e_1x1<=attention<=inception_4e_3x3_reduce
+  id: attention_inception_4e_1x1
 - attrs: {fPlane: 128}
-  expr: gsm_inception_4e_3x3_reduce<=gsm<=inception_4e_3x3_reduce
+  expr: gsm_inception_4e_3x3_reduce<=gsm<=attention_inception_4e_1x1
   id: gsm_inception_4e_3x3_reduce
 - attrs: {frozen: true}
   expr: inception_4e_3x3_reduce_bn<=BN<=gsm_inception_4e_3x3_reduce
@@ -469,8 +490,11 @@ layers:
 - attrs: {kernel_size: 1, num_output: 352}
   expr: inception_5a_1x1<=Convolution<=inception_4e_output
   id: inception_5a_1x1
+- attrs: {dimensions: 256}
+  expr: attention_inception_5a_1x1<=attention<=inception_5a_1x1
+  id: attention_inception_5a_1x1
 - attrs: {fPlane: 352}
-  expr: gsm_inception_5a_1x1<=gsm<=inception_5a_1x1
+  expr: gsm_inception_5a_1x1<=gsm<=attention_inception_5a_1x1
   id: gsm_inception_5a_1x1
 - attrs: {frozen: true}
   expr: inception_5a_1x1_bn<=BN<=gsm_inception_5a_1x1
@@ -527,8 +551,11 @@ layers:
 - attrs: {kernel_size: 1, num_output: 352}
   expr: inception_5b_1x1<=Convolution<=inception_5a_output
   id: inception_5b_1x1
+- attrs: {dimensions: 256}
+  expr: attention_inception_5b_1x1<=attention<=inception_5b_1x1
+  id: attention_inception_5b_1x1
 - attrs: {fPlane: 352}
-  expr: gsm_inception_5b_1x1<=gsm<=inception_5b_1x1
+  expr: gsm_inception_5b_1x1<=gsm<=attention_inception_5b_1x1
   id: gsm_inception_5b_1x1
 - attrs: {frozen: true}
   expr: inception_5b_1x1_bn<=BN<=gsm_inception_5b_1x1
