@@ -261,7 +261,7 @@ layers:
   expr: inception_4b_1x1<=Convolution<=inception_4a_output
   id: inception_4b_1x1
 - attrs: {dimensions: 256}
-  expr: attention_inception_4b_1x1<=attention<=attention_inception_4b_1x1
+  expr: attention_inception_4b_1x1<=attention<=inception_4b_1x1
   id: attention_inception_4b_1x1
 - attrs: {fPlane: 192}
   expr: gsm_inception_4b_1x1<=gsm<=attention_inception_4b_1x1
