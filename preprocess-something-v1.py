@@ -26,8 +26,9 @@ dict_categories = {}
 for i, category in enumerate(categories):
     dict_categories[category] = i
 
-files_input = ['%s-train.csv'%'something-something-v1']
-files_output = ['train_videofolder.txt']
+files_input = ['%s-validation.csv'%'something-something-v1','%s-train.csv'%'something-something-v1']
+files_output = ['val_videofolder.txt','train_videofolder.txt']
+
 for (filename_input, filename_output) in zip(files_input, files_output):
     with open(os.path.join(root_dir, filename_input)) as f:
         lines = f.readlines()
