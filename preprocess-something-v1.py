@@ -42,8 +42,11 @@ for (filename_input, filename_output) in zip(files_input, files_output):
     for i in range(len(folders)):
         curFolder = folders[i]
         curIDX = idx_categories[i]
-        dir_files = os.listdir(os.path.join(root_dir, '20bn-%s'%dataset_name, curFolder))
+        try:
+            dir_files = os.listdir(os.path.join(root_dir, '20bn-%s'%dataset_name, curFolder))
+        except:
+            continue
         output.append('%s %d %d'%(curFolder, len(dir_files), curIDX))
-        print('%d/%d'%(i, len(folders)))
+        print('%d/%d'%(i+1, len(folders)))
     with open(os.path.join(root_dir, filename_output),'w') as f:
         f.write('\n'.join(output))

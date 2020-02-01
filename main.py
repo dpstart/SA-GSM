@@ -44,7 +44,7 @@ def main():
                         dropout=args.dropout, partial_bn=not args.no_partialbn, gsm=args.gsm, target_transform=None)
 
 
-    #model = torch.nn.DataParallel(model, deviceids=args.gpus).cuda()
+    model = torch.nn.DataParallel(model, deviceids=args.gpus).cuda()
 
     
     train_loader = torch.utils.data.DataLoader(
