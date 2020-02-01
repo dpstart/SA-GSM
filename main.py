@@ -9,13 +9,14 @@ import os
 import sys
 import time
 from transforms import *
+from torch.nn.utils import clip_grad_norm_
 
 import ssl
 ssl._create_default_https_context = ssl._create_unverified_context
 
 def main():
 
-    global args 
+    global args
 
     args = parser.parse_args()
 
@@ -35,24 +36,39 @@ def main():
             os.makedirs(model_dir)
             os.makedirs(os.path.join(model_dir, args.root_log))
 
-        
 
-    train_videofolder, _, _, _ = return_dataset("something-v1")
 
-    model = VideoModel(num_class=num_class, modality=args.modality, 
+    train_videofolder, val_videofolder, _, _ = return_dataset("something-v1")
+
+    model = VideoModel(num_class=num_class, modality=args.modality,
                         num_segments=args.num_segments, base_model=args.arch, consensus_type=args.consensus_type,
                         dropout=args.dropout, partial_bn=not args.no_partialbn, gsm=args.gsm, target_transform=None)
 
+    train_augmentation = model.get_augmentation()
+    model = torch.nn.DataParallel(model).cuda()
 
-    model = torch.nn.DataParallel(model, deviceids=args.gpus).cuda()
 
-    
+
     train_loader = torch.utils.data.DataLoader(
         VideoDataset("dataset/something-v1/20bn-something-something-v1", train_videofolder, num_segments=8,
                    new_length=1,
                    modality="RGB",
                    image_tmpl=rgb_prefix+rgb_read_format,
                    transform=torchvision.transforms.Compose([
+                       train_augmentation,
+                       Stack(roll=(args.arch in ['BNInception', 'InceptionV3'])),
+                       ToTorchFormatTensor(div=(args.arch not in ['BNInception', 'InceptionV3']))
+                   ])),
+        batch_size=16, shuffle=True,
+        num_workers=4, pin_memory=True)
+
+    val_loader = torch.utils.data.DataLoader(
+        VideoDataset("dataset/something-v1/20bn-something-something-v1", val_videofolder, num_segments=8,
+                   new_length=1,
+                   modality="RGB",
+                   image_tmpl=rgb_prefix+rgb_read_format,
+                   transform=torchvision.transforms.Compose([
+                       train_augmentation,
                        Stack(roll=(args.arch in ['BNInception', 'InceptionV3'])),
                        ToTorchFormatTensor(div=(args.arch not in ['BNInception', 'InceptionV3']))
                    ])),
@@ -66,7 +82,7 @@ def main():
 
     args.start_epoch = 0
     log_training = open(os.path.join(model_dir, args.root_log, '%s.csv' % args.store_name), 'a')
-                            
+
     for epoch in range(args.start_epoch, args.epochs):
 
         #writer.add_scalar('lr', optimizer.param_groups[0]['lr'], epoch + 1)
@@ -78,7 +94,7 @@ def main():
         # evaluate on validation set
         if (epoch + 1) % args.eval_freq == 0 or epoch == args.epochs - 1:
             prec1 = validate(val_loader, model, criterion, (epoch + 1) * len(train_loader), log_training,
-                             writer=writer, epoch=epoch)
+                             writer=None, epoch=epoch)
 
             """
             # remember best prec@1 and save checkpoint
@@ -167,14 +183,14 @@ def train(train_loader, model, criterion, optimizer, epoch, log, writer):
                         epoch, i, len(train_loader), batch_time=batch_time,
                         data_time=data_time, loss=losses, top1=top1, top5=top5, lr=optimizer.param_groups[-1]['lr']))
             print(output)
-            writer.add_scalar('train/batch_loss', losses.avg, epoch * len(train_loader) + i)
-            writer.add_scalar('train/batch_top1Accuracy', top1.avg, epoch * len(train_loader) + i)
+            #writer.add_scalar('train/batch_loss', losses.avg, epoch * len(train_loader) + i)
+            #writer.add_scalar('train/batch_top1Accuracy', top1.avg, epoch * len(train_loader) + i)
             log.write(output + '\n')
             log.flush()
-    writer.add_scalar('train/loss', losses.avg, epoch + 1)
-    writer.add_scalar('train/top1Accuracy', top1.avg, epoch + 1)
-    writer.add_scalar('train/top5Accuracy', top5.avg, epoch + 1)
-    return top1.avg   
+    #writer.add_scalar('train/loss', losses.avg, epoch + 1)
+    #writer.add_scalar('train/top1Accuracy', top1.avg, epoch + 1)
+    #writer.add_scalar('train/top5Accuracy', top5.avg, epoch + 1)
+    return top1.avg
 
 def validate(val_loader, model, criterion, iter, log, epoch, writer):
     batch_time = AverageMeter()
@@ -224,9 +240,9 @@ def validate(val_loader, model, criterion, iter, log, epoch, writer):
     print(output)
     output_best = '\nBest Prec@1: %.3f'%(best_prec1)
     print(output_best)
-    writer.add_scalar('test/loss', losses.avg, epoch + 1)
-    writer.add_scalar('test/top1Accuracy', top1.avg, epoch + 1)
-    writer.add_scalar('test/top5Accuracy', top5.avg, epoch + 1)
+    #writer.add_scalar('test/loss', losses.avg, epoch + 1)
+    #writer.add_scalar('test/top1Accuracy', top1.avg, epoch + 1)
+    #writer.add_scalar('test/top5Accuracy', top5.avg, epoch + 1)
     log.write(output + ' ' + output_best + '\n')
     log.flush()
 
@@ -247,6 +263,22 @@ class AverageMeter(object):
         self.val = val
         self.sum += val * n
         self.count += n
-        self.avg = self.sum / self.count                 
+        self.avg = self.sum / self.count
+
+def accuracy(output, target, topk=(1,)):
+    """Computes the precision@k for the specified values of k"""
+    maxk = max(topk)
+    batch_size = target.size(0)
+
+    _, pred = output.topk(maxk, 1, True, True)
+    pred = pred.t()
+    correct = pred.eq(target.view(1, -1).expand_as(pred))
+
+    res = []
+    for k in topk:
+        correct_k = correct[:k].view(-1).float().sum(0)
+        res.append(correct_k.mul_(100.0 / batch_size))
+    return res
+
 if __name__ == "__main__":
     main()
