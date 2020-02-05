@@ -14,6 +14,8 @@ from tensorboardX import SummaryWriter
 import ssl
 ssl._create_default_https_context = ssl._create_unverified_context
 
+best_prec1 = 0
+
 def main():
 
     global args
@@ -44,7 +46,9 @@ def main():
                         num_segments=args.num_segments, base_model=args.arch, consensus_type=args.consensus_type,
                         dropout=args.dropout, partial_bn=not args.no_partialbn, gsm=args.gsm, target_transform=None)
 
+
     train_augmentation = model.get_augmentation()
+    policies = model.get_optim_policies()
     model = torch.nn.DataParallel(model).cuda()
 
 
@@ -76,9 +80,12 @@ def main():
         num_workers=4, pin_memory=True)
 
     criterion = torch.nn.CrossEntropyLoss().cuda()
-
-    optimizer = torch.optim.SGD(model.parameters(),
-                                0.01)
+    
+    for group in policies:
+        print(('group: {} has {} params, lr_mult: {}, decay_mult: {}'.format(
+            group['name'], len(group['params']), group['lr_mult'], group['decay_mult'])))
+    optimizer = torch.optim.SGD(policies,
+                                args.lr)
 
     args.start_epoch = 0
     log_training = open(os.path.join(model_dir, args.root_log, '%s.csv' % args.store_name), 'a')
@@ -141,6 +148,7 @@ def train(train_loader, model, criterion, optimizer, epoch, log, writer):
     for i, (input, target) in enumerate(train_loader):
         # measure data loading time
         data_time.update(time.time() - end)
+
 
         target = target.cuda()
         input_var = torch.autograd.Variable(input)
