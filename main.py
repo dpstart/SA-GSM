@@ -10,7 +10,7 @@ import sys
 import time
 from transforms import *
 from torch.nn.utils import clip_grad_norm_
-
+from tensorboardX import SummaryWriter
 import ssl
 ssl._create_default_https_context = ssl._create_unverified_context
 
@@ -36,7 +36,7 @@ def main():
             os.makedirs(model_dir)
             os.makedirs(os.path.join(model_dir, args.root_log))
 
-
+    writer = SummaryWriter(model_dir)
 
     train_videofolder, val_videofolder, _, _ = return_dataset("something-v1")
 
@@ -85,16 +85,16 @@ def main():
 
     for epoch in range(args.start_epoch, args.epochs):
 
-        #writer.add_scalar('lr', optimizer.param_groups[0]['lr'], epoch + 1)
+        writer.add_scalar('lr', optimizer.param_groups[0]['lr'], epoch + 1)
 
-        train_prec1 = train(train_loader, model, criterion, optimizer, epoch, log_training, writer=None)
+        train_prec1 = train(train_loader, model, criterion, optimizer, epoch, log_training, writer=writer)
 
         #lr_scheduler_clr.step()
 
         # evaluate on validation set
-        if (epoch + 1) % args.eval_freq == 0 or epoch == args.epochs - 1:
+        if (epoch + 1) % 1 == 0 or epoch == args.epochs - 1:
             prec1 = validate(val_loader, model, criterion, (epoch + 1) * len(train_loader), log_training,
-                             writer=None, epoch=epoch)
+                             writer=writer, epoch=epoch)
 
             """
             # remember best prec@1 and save checkpoint
@@ -183,13 +183,13 @@ def train(train_loader, model, criterion, optimizer, epoch, log, writer):
                         epoch, i, len(train_loader), batch_time=batch_time,
                         data_time=data_time, loss=losses, top1=top1, top5=top5, lr=optimizer.param_groups[-1]['lr']))
             print(output)
-            #writer.add_scalar('train/batch_loss', losses.avg, epoch * len(train_loader) + i)
-            #writer.add_scalar('train/batch_top1Accuracy', top1.avg, epoch * len(train_loader) + i)
+            writer.add_scalar('train/batch_loss', losses.avg, epoch * len(train_loader) + i)
+            writer.add_scalar('train/batch_top1Accuracy', top1.avg, epoch * len(train_loader) + i)
             log.write(output + '\n')
             log.flush()
-    #writer.add_scalar('train/loss', losses.avg, epoch + 1)
-    #writer.add_scalar('train/top1Accuracy', top1.avg, epoch + 1)
-    #writer.add_scalar('train/top5Accuracy', top5.avg, epoch + 1)
+    writer.add_scalar('train/loss', losses.avg, epoch + 1)
+    writer.add_scalar('train/top1Accuracy', top1.avg, epoch + 1)
+    writer.add_scalar('train/top5Accuracy', top5.avg, epoch + 1)
     return top1.avg
 
 def validate(val_loader, model, criterion, iter, log, epoch, writer):
@@ -240,9 +240,9 @@ def validate(val_loader, model, criterion, iter, log, epoch, writer):
     print(output)
     output_best = '\nBest Prec@1: %.3f'%(best_prec1)
     print(output_best)
-    #writer.add_scalar('test/loss', losses.avg, epoch + 1)
-    #writer.add_scalar('test/top1Accuracy', top1.avg, epoch + 1)
-    #writer.add_scalar('test/top5Accuracy', top5.avg, epoch + 1)
+    writer.add_scalar('test/loss', losses.avg, epoch + 1)
+    writer.add_scalar('test/top1Accuracy', top1.avg, epoch + 1)
+    writer.add_scalar('test/top5Accuracy', top5.avg, epoch + 1)
     log.write(output + ' ' + output_best + '\n')
     log.flush()
 
