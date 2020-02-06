@@ -3,6 +3,7 @@
 import torch
 from torch import nn
 from torch.cuda import FloatTensor as ftens
+import sys
 
 class GSM(nn.Module):
     def __init__(self, fPlane, num_segments=3):
@@ -27,16 +28,21 @@ class GSM(nn.Module):
         batchSize = x.size(0) // self.num_segments
         shape = x.size(1), x.size(2), x.size(3)
         assert  shape[0] == self.fPlane
+        #print("Initial shape", x.shape)
         x = x.view(batchSize, self.num_segments, *shape).permute(0, 2, 1, 3, 4).contiguous()
+        #print("Shape after view", x.shape)
         x_bn = self.bn(x)
         x_bn_relu = self.relu(x_bn)
 
         # Spatial gating
         gate = self.tanh(self.conv3D(x_bn_relu))
+       # print("Gate shape", gate.shape)
         gate_group1 = gate[:, 0].unsqueeze(1)
         gate_group2 = gate[:, 1].unsqueeze(1)
+        #print("gate group shape", gate_group1.shape)
         x_group1 = x[:, :self.fPlane // 2]
         x_group2 = x[:, self.fPlane // 2:]
+       # print("x group shape", x_group1.shape)
         y_group1 = gate_group1 * x_group1
         y_group2 = gate_group2 * x_group2
 
@@ -46,12 +52,17 @@ class GSM(nn.Module):
         y_group1 = self.lshift_zeroPad(y_group1) + r_group1
         y_group2 = self.rshift_zeroPad(y_group2) + r_group2
 
+        #print("after shift and pad", y_group1.shape)
+
         y_group1 = y_group1.view(batchSize, 2, self.fPlane // 4, self.num_segments, *shape[1:]).permute(0, 2, 1, 3, 4,
                                                                                                         5)
         y_group2 = y_group2.view(batchSize, 2, self.fPlane // 4, self.num_segments, *shape[1:]).permute(0, 2, 1, 3, 4,
                                                                                                         5)
+        #print("after view", y_group1.shape)
 
         y = torch.cat((y_group1.contiguous().view(batchSize, self.fPlane//2, self.num_segments, *shape[1:]),
                        y_group2.contiguous().view(batchSize, self.fPlane//2, self.num_segments, *shape[1:])), dim=1)
+        out = y.permute(0, 2, 1, 3, 4).contiguous().view(batchSize*self.num_segments, *shape)
+        #print("out", out.shape)
 
-        return y.permute(0, 2, 1, 3, 4).contiguous().view(batchSize*self.num_segments, *shape)
+        return out

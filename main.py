@@ -8,6 +8,7 @@ from opts import parser
 import os
 import sys
 import time
+import torch.backends.cudnn as cudnn
 from transforms import *
 from torch.nn.utils import clip_grad_norm_
 from tensorboardX import SummaryWriter
@@ -21,6 +22,7 @@ best_prec1 = 0
 def main():
 
     global args
+    global best_prec1
 
     args = parser.parse_args()
     check_rootfolders()
@@ -105,9 +107,9 @@ def main():
 
     criterion = torch.nn.CrossEntropyLoss().cuda()
     
-    for group in policies:
-        print(('group: {} has {} params, lr_mult: {}, decay_mult: {}'.format(
-            group['name'], len(group['params']), group['lr_mult'], group['decay_mult'])))
+    #for group in policies:
+    #    print(('group: {} has {} params, lr_mult: {}, decay_mult: {}'.format(
+    #        group['name'], len(group['params']), group['lr_mult'], group['decay_mult'])))
     
     optimizer = torch.optim.SGD(policies, 
                                 args.lr, 
@@ -312,7 +314,7 @@ class AverageMeter(object):
 
 
 def save_checkpoint(state, is_best, model_dir):
-    print(f"Saving checkpoint: {state} to {model_dir}")
+    #print(f"Saving checkpoint: {state} to {model_dir}")
     torch.save(state, '%s/%s_checkpoint.pth.tar' % (model_dir, args.store_name))
     if is_best:
         shutil.copyfile('%s/%s_checkpoint.pth.tar' % (model_dir, args.store_name),
