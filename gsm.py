@@ -5,6 +5,32 @@ from torch import nn
 from torch.cuda import FloatTensor as ftens
 import sys
 
+class LinearAttentionBlock(nn.Module):
+    def __init__(self, in_features, normalize_attn=True):
+        super(LinearAttentionBlock, self).__init__()
+        self.normalize_attn = normalize_attn
+        self.op = nn.Conv2d(in_channels=in_features, out_channels=1, kernel_size=1, padding=0, bias=False)
+    def forward(self, l, g):
+        N, C, W, H = l.size()
+        c = self.op(l+g) # batch_sizex1xWxH
+        if self.normalize_attn:
+            a = F.softmax(c.view(N,1,-1), dim=2).view(N,1,W,H)
+        else:
+            a = torch.sigmoid(c)
+        g = torch.mul(a.expand_as(l), l)
+        if self.normalize_attn:
+            g = g.view(N,C,-1).sum(dim=2) # batch_sizexC
+        else:
+            g = F.adaptive_avg_pool2d(g, (1,1)).view(N,C)
+        return c.view(N,1,W,H), g
+
+class ProjectorBlock(nn.Module):
+    def __init__(self, in_features, out_features):
+        super(ProjectorBlock, self).__init__()
+        self.op = nn.Conv2d(in_channels=in_features, out_channels=out_features, kernel_size=1, padding=0, bias=False)
+    def forward(self, inputs):
+        return self.op(inputs)
+
 class GSM(nn.Module):
     def __init__(self, fPlane, num_segments=3):
         super(GSM, self).__init__()
@@ -18,6 +44,8 @@ class GSM(nn.Module):
         self.num_segments = num_segments
         self.bn = nn.BatchNorm3d(num_features=fPlane)
         self.relu = nn.ReLU()
+        self.projector = ProjectorBlock(128, 512)
+        self.attn = LinearAttentionBlock(512)
 
     def lshift_zeroPad(self, x):
         return torch.cat((x[:,:,1:], ftens(x.size(0), x.size(1), 1, x.size(3), x.size(4)).fill_(0)), dim=2)
@@ -65,4 +93,6 @@ class GSM(nn.Module):
         out = y.permute(0, 2, 1, 3, 4).contiguous().view(batchSize*self.num_segments, *shape)
         #print("out", out.shape)
 
-        return out
+        _, out_attn = self.attn(self.projector(out), out)
+
+        return out_attn
