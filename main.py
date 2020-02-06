@@ -310,6 +310,14 @@ class AverageMeter(object):
         self.count += n
         self.avg = self.sum / self.count
 
+
+def save_checkpoint(state, is_best, model_dir):
+    print(f"Saving checkpoint: {state} to {model_dir}")
+    torch.save(state, '%s/%s_checkpoint.pth.tar' % (model_dir, args.store_name))
+    if is_best:
+        shutil.copyfile('%s/%s_checkpoint.pth.tar' % (model_dir, args.store_name),
+                        '%s/%s_best.pth.tar' % (model_dir, args.store_name))
+
 def accuracy(output, target, topk=(1,)):
     """Computes the precision@k for the specified values of k"""
     maxk = max(topk)
