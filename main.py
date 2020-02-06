@@ -11,6 +11,8 @@ import time
 from transforms import *
 from torch.nn.utils import clip_grad_norm_
 from tensorboardX import SummaryWriter
+import shutil
+import CosineAnnealingLR
 import ssl
 ssl._create_default_https_context = ssl._create_unverified_context
 
@@ -21,6 +23,7 @@ def main():
     global args
 
     args = parser.parse_args()
+    check_rootfolders()
 
 
     if args.dataset == 'something-v1':
@@ -46,10 +49,30 @@ def main():
                         num_segments=args.num_segments, base_model=args.arch, consensus_type=args.consensus_type,
                         dropout=args.dropout, partial_bn=not args.no_partialbn, gsm=args.gsm, target_transform=None)
 
+    crop_size = model.crop_size
+    scale_size = model.scale_size
+    input_mean = model.input_mean
+    input_std = model.input_std
 
     train_augmentation = model.get_augmentation()
     policies = model.get_optim_policies()
     model = torch.nn.DataParallel(model).cuda()
+
+    if args.resume:
+        if os.path.isfile(args.resume):
+            print(("=> loading checkpoint '{}'".format(args.resume)))
+            checkpoint = torch.load(args.resume)
+            args.start_epoch = checkpoint['epoch']
+            best_prec1 = checkpoint['best_prec1']
+            model.load_state_dict(checkpoint['state_dict'])
+            print(("=> loaded checkpoint '{}' (epoch {})"
+                  .format(args.evaluate, checkpoint['epoch'])))
+        else:
+            print(("=> no checkpoint found at '{}'".format(args.resume)))
+
+    cudnn.benchmark = True
+
+    normalize = GroupNormalize(input_mean, input_std)
 
 
 
@@ -61,10 +84,11 @@ def main():
                    transform=torchvision.transforms.Compose([
                        train_augmentation,
                        Stack(roll=(args.arch in ['BNInception', 'InceptionV3'])),
-                       ToTorchFormatTensor(div=(args.arch not in ['BNInception', 'InceptionV3']))
+                       ToTorchFormatTensor(div=(args.arch not in ['BNInception', 'InceptionV3'])),
+                       normalize
                    ])),
-        batch_size=16, shuffle=True,
-        num_workers=4, pin_memory=True)
+        batch_size=args.batch_size, shuffle=True,
+        num_workers=args.workers, pin_memory=True)
 
     val_loader = torch.utils.data.DataLoader(
         VideoDataset("dataset/something-v1/20bn-something-something-v1", val_videofolder, num_segments=8,
@@ -84,22 +108,35 @@ def main():
     for group in policies:
         print(('group: {} has {} params, lr_mult: {}, decay_mult: {}'.format(
             group['name'], len(group['params']), group['lr_mult'], group['decay_mult'])))
-    optimizer = torch.optim.SGD(policies,
-                                args.lr)
+    
+    optimizer = torch.optim.SGD(policies, 
+                                args.lr, 
+                                momentum=args.momentum,
+                                weight_decay=args.weight_decay)
 
-    args.start_epoch = 0
+    lr_scheduler_clr = CosineAnnealingLR.WarmupCosineLR(optimizer=optimizer, 
+                                                        milestones=[args.warmup, args.epochs],
+                                                        warmup_iters=args.warmup, 
+                                                        min_ratio=1e-7)
+    if args.resume:
+        for epoch in range(0, args.start_epoch):
+            lr_scheduler_clr.step()
+
+    if args.evaluate:
+        validate(val_loader, model, criterion, 0)
+        return
+
     log_training = open(os.path.join(model_dir, args.root_log, '%s.csv' % args.store_name), 'a')
-
     for epoch in range(args.start_epoch, args.epochs):
 
         writer.add_scalar('lr', optimizer.param_groups[0]['lr'], epoch + 1)
 
         train_prec1 = train(train_loader, model, criterion, optimizer, epoch, log_training, writer=writer)
 
-        #lr_scheduler_clr.step()
+        lr_scheduler_clr.step()
 
         # evaluate on validation set
-        if (epoch + 1) % 1 == 0 or epoch == args.epochs - 1:
+        if (epoch + 1) % args.eval_freq == 0 or epoch == args.epochs - 1:
             prec1 = validate(val_loader, model, criterion, (epoch + 1) * len(train_loader), log_training,
                              writer=writer, epoch=epoch)
 
@@ -134,12 +171,12 @@ def train(train_loader, model, criterion, optimizer, epoch, log, writer):
     top1 = AverageMeter()
     top5 = AverageMeter()
 
-    """
+
     if args.no_partialbn:
         model.module.partialBN(False)
     else:
         model.module.partialBN(True)
-    """
+
 
     # switch to train mode
     model.train()
@@ -287,6 +324,14 @@ def accuracy(output, target, topk=(1,)):
         correct_k = correct[:k].view(-1).float().sum(0)
         res.append(correct_k.mul_(100.0 / batch_size))
     return res
+
+def check_rootfolders():
+    """Create log and model folder"""
+    folders_util = [args.root_log, args.root_model, args.root_output]
+    for folder in folders_util:
+        if not os.path.exists(folder):
+            print('creating folder ' + folder)
+            os.mkdir(folder)
 
 if __name__ == "__main__":
     main()
