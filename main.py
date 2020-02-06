@@ -103,7 +103,7 @@ def main():
             prec1 = validate(val_loader, model, criterion, (epoch + 1) * len(train_loader), log_training,
                              writer=writer, epoch=epoch)
 
-            """
+            
             # remember best prec@1 and save checkpoint
             is_best = prec1 > best_prec1
             best_prec1 = max(prec1, best_prec1)
@@ -124,7 +124,7 @@ def main():
                 'current_prec1': train_prec1,
                 'lr': optimizer.param_groups[-1]['lr'],
             }, False, model_dir)
-        """
+       
 
 
 def train(train_loader, model, criterion, optimizer, epoch, log, writer):
