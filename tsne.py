@@ -21,6 +21,10 @@ ssl._create_default_https_context = ssl._create_unverified_context
 
 import random
 import cv2
+import numpy as np
+
+import matplotlib.pyplot as plt
+import matplotlib as mpl
 
 
 def svg(embeddings, labels, thumbnails, viewbox = (200, 200), legend_size = (10, 10), legend_font_size = 3, border_width = 3, circle_radius = 1):
@@ -86,7 +90,33 @@ def main():
     #embeddings = torch.stack(embeddings)
 
     embeddings = tsne(embeddings)
-    open('svg.xml', 'w').write(svg(embeddings, labels, thumbnails))
+    #open('svg.xml', 'w').write(svg(embeddings, labels, thumbnails))
+    
+    fig, ax = plt.subplots(1,1, figsize=(6,6))
+
+    N = len(np.unique(labels))
+
+    cmap = plt.cm.jet
+# extract all colors from the .jet map
+    cmaplist = [cmap(i) for i in range(cmap.N)]
+    # create the new map
+    cmap = cmap.from_list('Custom cmap', cmaplist, cmap.N)
+
+    # define the bins and normalize
+    bounds = np.linspace(0,N,N+1)
+    norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
+
+    print(labels)
+
+    # make the scatter
+    scat = ax.scatter(embeddings[:,0], embeddings[:,1],c=labels,cmap=cmap)
+    # create the colorbar
+    #cb = plt.colorbar(scat, spacing='proportional',ticks=bounds)
+    #cb.set_label('Custom cbar')
+    ax.set_title('Discrete color mappings')
+    plt.show()
+    #plt.scatter(embeddings[:,0], embeddings[:,1], label=labels)
+    #plt.show()
 
 def tsne(embeddings):
     return torch.from_numpy(TSNE(n_iter = 250, verbose=5).fit_transform(embeddings.numpy()))
