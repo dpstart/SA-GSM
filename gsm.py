@@ -27,6 +27,8 @@ class Self_Attn(nn.Module):
                 attention: B X N X N (N is Width*Height)
         """
         m_batchsize,C,width ,height = x.size()
+        #print("attn input size", x.shape)
+
         proj_query  = self.query_conv(x).view(m_batchsize,-1,width*height).permute(0,2,1) # B X CX(N)
         proj_key =  self.key_conv(x).view(m_batchsize,-1,width*height) # B X C x (*W*H)
         energy =  torch.bmm(proj_query,proj_key) # transpose check
@@ -52,7 +54,7 @@ class GSM(nn.Module):
         self.num_segments = num_segments
         self.bn = nn.BatchNorm3d(num_features=fPlane)
         self.relu = nn.ReLU()
-        self.attn = Self_Attn(128)
+        self.attn = Self_Attn(fPlane, 'relu')
 
     def lshift_zeroPad(self, x):
         return torch.cat((x[:,:,1:], ftens(x.size(0), x.size(1), 1, x.size(3), x.size(4)).fill_(0)), dim=2)
@@ -60,6 +62,8 @@ class GSM(nn.Module):
         return torch.cat((ftens(x.size(0), x.size(1), 1, x.size(3), x.size(4)).fill_(0), x[:,:,:-1]), dim=2)
 
     def forward(self, x):
+
+        #("fplane", self.fPlane)
         batchSize = x.size(0) // self.num_segments
         shape = x.size(1), x.size(2), x.size(3)
         assert  shape[0] == self.fPlane
@@ -99,7 +103,8 @@ class GSM(nn.Module):
                        y_group2.contiguous().view(batchSize, self.fPlane//2, self.num_segments, *shape[1:])), dim=1)
         out = y.permute(0, 2, 1, 3, 4).contiguous().view(batchSize*self.num_segments, *shape)
         #print("out", out.shape)
+        
+        #if self.fPlane == 64:
+        out, _ = self.attn(out)
 
-        out_attn, _ = self.attn(out)
-
-        return out_attn
+        return out

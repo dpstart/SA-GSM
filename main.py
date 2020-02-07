@@ -44,12 +44,18 @@ def main():
             os.makedirs(os.path.join(model_dir, args.root_log))
 
     writer = SummaryWriter(model_dir)
+    #print("Adding stuff to", model_dir)
+    #.add_scalar("LOSS", 2, 10)
+    writer.flush()
+    #sys.exit(1)
 
     train_videofolder, val_videofolder, _, _ = return_dataset("something-v1")
 
     model = VideoModel(num_class=num_class, modality=args.modality,
                         num_segments=args.num_segments, base_model=args.arch, consensus_type=args.consensus_type,
                         dropout=args.dropout, partial_bn=not args.no_partialbn, gsm=args.gsm, target_transform=None)
+
+    print("parameters", sum(p.numel() for p in model.parameters()))
 
     crop_size = model.crop_size
     scale_size = model.scale_size
@@ -111,6 +117,7 @@ def main():
     #    print(('group: {} has {} params, lr_mult: {}, decay_mult: {}'.format(
     #        group['name'], len(group['params']), group['lr_mult'], group['decay_mult'])))
     
+
     optimizer = torch.optim.SGD(policies, 
                                 args.lr, 
                                 momentum=args.momentum,
@@ -132,6 +139,7 @@ def main():
     for epoch in range(args.start_epoch, args.epochs):
 
         writer.add_scalar('lr', optimizer.param_groups[0]['lr'], epoch + 1)
+        writer.flush()
 
         train_prec1 = train(train_loader, model, criterion, optimizer, epoch, log_training, writer=writer)
 
@@ -230,13 +238,16 @@ def train(train_loader, model, criterion, optimizer, epoch, log, writer):
                         epoch, i, len(train_loader), batch_time=batch_time,
                         data_time=data_time, loss=losses, top1=top1, top5=top5, lr=optimizer.param_groups[-1]['lr']))
             print(output)
+            #print("Adding scalar", losses.avg)
             writer.add_scalar('train/batch_loss', losses.avg, epoch * len(train_loader) + i)
             writer.add_scalar('train/batch_top1Accuracy', top1.avg, epoch * len(train_loader) + i)
+            writer.flush()
             log.write(output + '\n')
             log.flush()
     writer.add_scalar('train/loss', losses.avg, epoch + 1)
     writer.add_scalar('train/top1Accuracy', top1.avg, epoch + 1)
     writer.add_scalar('train/top5Accuracy', top5.avg, epoch + 1)
+    writer.flush()
     return top1.avg
 
 def validate(val_loader, model, criterion, iter, log, epoch, writer):
@@ -290,6 +301,7 @@ def validate(val_loader, model, criterion, iter, log, epoch, writer):
     writer.add_scalar('test/loss', losses.avg, epoch + 1)
     writer.add_scalar('test/top1Accuracy', top1.avg, epoch + 1)
     writer.add_scalar('test/top5Accuracy', top5.avg, epoch + 1)
+    writer.flush()
     log.write(output + ' ' + output_best + '\n')
     log.flush()
 
