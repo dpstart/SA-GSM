@@ -32,6 +32,10 @@ def main():
         num_class = 174
         rgb_prefix = ''
         rgb_read_format = "{:05d}.jpg"
+    elif args.dataset == 'diving48':
+        num_class = 48
+        rgb_prefix = 'frames'
+        rgb_read_format = "{:05d}.jpg"
     else:
         ValueError("Unknown dataset"+args.dataset)
 
@@ -49,7 +53,7 @@ def main():
     writer.flush()
     #sys.exit(1)
 
-    train_videofolder, val_videofolder, _, _ = return_dataset("something-v1")
+    train_videofolder, val_videofolder, args.root_path, _ = return_dataset(args.dataset)
 
     model = VideoModel(num_class=num_class, modality=args.modality,
                         num_segments=args.num_segments, base_model=args.arch, consensus_type=args.consensus_type,
@@ -85,7 +89,7 @@ def main():
 
 
     train_loader = torch.utils.data.DataLoader(
-        VideoDataset("dataset/something-v1/20bn-something-something-v1", train_videofolder, num_segments=8,
+        VideoDataset(args.root_path, train_videofolder, num_segments=8,
                    new_length=1,
                    modality="RGB",
                    image_tmpl=rgb_prefix+rgb_read_format,
@@ -99,7 +103,7 @@ def main():
         num_workers=args.workers, pin_memory=True)
 
     val_loader = torch.utils.data.DataLoader(
-        VideoDataset("dataset/something-v1/20bn-something-something-v1", val_videofolder, num_segments=8,
+        VideoDataset(args.root_path, val_videofolder, num_segments=8,
                    new_length=1,
                    modality="RGB",
                    image_tmpl=rgb_prefix+rgb_read_format,

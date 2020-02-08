@@ -54,7 +54,7 @@ class GSM(nn.Module):
         self.num_segments = num_segments
         self.bn = nn.BatchNorm3d(num_features=fPlane)
         self.relu = nn.ReLU()
-        #self.attn = Self_Attn(fPlane, 'relu')
+        self.attn = Self_Attn(fPlane, 'relu')
 
     def lshift_zeroPad(self, x):
         return torch.cat((x[:,:,1:], ftens(x.size(0), x.size(1), 1, x.size(3), x.size(4)).fill_(0)), dim=2)
@@ -105,6 +105,6 @@ class GSM(nn.Module):
         #print("out", out.shape)
         
         #if self.fPlane == 64:
-        #out, _ = self.attn(out)
+        out, _ = self.attn(out)
 
         return out

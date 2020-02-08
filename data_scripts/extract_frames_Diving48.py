@@ -4,6 +4,7 @@ import glob
 src_dir = 'dataset/Diving48/rgb' # Dir containing the videos
 des_dir = 'dataset/Diving48/frames' # Output dir to save the videos
 
+
 vid_files = glob.glob1(src_dir, '*.mp4')
 for vid in vid_files:
     des_dir_path = os.path.join(des_dir, vid[:-4])

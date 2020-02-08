@@ -26,6 +26,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 
+import seaborn as sns
+sns.set()
 
 def svg(embeddings, labels, thumbnails, viewbox = (200, 200), legend_size = (10, 10), legend_font_size = 3, border_width = 3, circle_radius = 1):
     embeddings = (embeddings - embeddings.min(0)[0]) / (embeddings.max(0)[0] - embeddings.min(0)[0]) * torch.Tensor(viewbox).type(torch.DoubleTensor)
