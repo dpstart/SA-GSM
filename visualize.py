@@ -27,6 +27,10 @@ def main():
   
     train_videofolder, val_videofolder, args.root_path, _ = return_dataset(args.dataset)
 
+    num_class = 174
+    rgb_prefix = ''
+    rgb_read_format = "{:05d}.jpg"
+
     model = VideoModel(num_class=num_class, modality=args.modality,
                         num_segments=args.num_segments, base_model=args.arch, consensus_type=args.consensus_type,
                         dropout=args.dropout, partial_bn=not args.no_partialbn, gsm=args.gsm, target_transform=None)
@@ -40,7 +44,7 @@ def main():
 
     train_augmentation = model.get_augmentation()
     policies = model.get_optim_policies()
-    model = torch.nn.DataParallel(model).cuda()
+    model = model.cuda()
 
     if args.resume:
         if os.path.isfile(args.resume):
@@ -71,41 +75,53 @@ def main():
                        normalize
                    ]))
 
+    def normalize_output(img):
+        img = img - img.min()
+        img = img / img.max()
+        return img
+    data = dataset[0][0].unsqueeze_(0).cuda()
+    output = model(data)
 
-  def normalize_output(img):
-    img = img - img.min()
-    img = img / img.max()
-    return img
+    #print(model)
+    #.exit(1)
 
-  print(model)
-  sys.exit(1)
+    # Plot some images
+    idx = torch.randint(0, output.size(0), ())
+    #pred = normalize_output(output[idx, 0])
+    img = data[idx, 0]
 
-  # Plot some images
-  idx = torch.randint(0, output.size(0), ())
-  pred = normalize_output(output[idx, 0])
-  img = data[idx, 0]
+    #fig, axarr = plt.subplots(1, 2)
+    plt.imshow(img.cpu().detach().numpy())
+    #axarr[1].imshow(pred.cpu().detach().numpy())
 
-  fig, axarr = plt.subplots(1, 2)
-  axarr[0].imshow(img.detach().numpy())
-  axarr[1].imshow(pred.detach().numpy())
+    # Visualize feature maps
+    activation = {}
+    def get_activation(name):
+        def hook(model, input, output):
+            activation[name] = output.detach()
+        return hook
 
-  # Visualize feature maps
-  activation = {}
-  def get_activation(name):
-      def hook(model, input, output):
-          activation[name] = output.detach()
-      return hook
+  
 
-  model.conv1.register_forward_hook(get_activation('conv1'))
-  data, _ = dataset[0]
-  data.unsqueeze_(0)
-  output = model(data)
+    model.base_model.conv1_7x7_s2.register_forward_hook(get_activation('conv1'))
+    data, _ = dataset[0]
+    data.unsqueeze_(0)
+    output = model(data.cuda())
 
-  act = activation['conv1'].squeeze()
-  fig, axarr = plt.subplots(act.size(0))
-  for idx in range(act.size(0)):
-      axarr[idx].imshow(act[idx])
+    kernels = model.base_model.conv1_7x7_s2.weight.cpu().detach()
 
+    fig, axarr = plt.subplots(kernels.size(0)-40, figsize=(15,15))
+    for idx in range(kernels.size(0)-40):
+        axarr[idx].imshow(np.transpose(kernels[idx].squeeze(), (1,2,0)))
+        
+
+    act = activation['conv1'].squeeze()
+    fig, axarr = plt.subplots(act.size(0), figsize=(15,15))
+    for idx in range(act.size(0)):
+        axarr[idx].imshow(np.transpose(act[idx][:3].cpu(), (1,2,0)))
+
+    plt.tight_layout()
+    plt.show()
 
 if __name__ == "__main__":
     main()
