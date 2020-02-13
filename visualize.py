@@ -2,6 +2,7 @@ from dataset_video import return_dataset
 from models import VideoModel
 import torchvision
 import torch
+import torch.nn as nn
 from dataset import VideoDataset
 import argparse
 from opts import parser
@@ -19,6 +20,13 @@ ssl._create_default_https_context = ssl._create_unverified_context
 
 import matplotlib.pyplot as plt
 
+class Identity(nn.Module):
+    def __init__(self):
+        super(Identity, self).__init__()
+        
+    def forward(self, x):
+        return x
+
 def main():
 
     global args
@@ -35,7 +43,11 @@ def main():
                         num_segments=args.num_segments, base_model=args.arch, consensus_type=args.consensus_type,
                         dropout=args.dropout, partial_bn=not args.no_partialbn, gsm=args.gsm, target_transform=None)
 
+    model.consensus = Identity()
     print("parameters", sum(p.numel() for p in model.parameters()))
+
+    print(model)
+    sys.exit(1)
 
     crop_size = model.crop_size
     scale_size = model.scale_size

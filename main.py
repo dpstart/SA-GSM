@@ -76,7 +76,7 @@ def main():
             checkpoint = torch.load(args.resume)
             args.start_epoch = checkpoint['epoch']
             best_prec1 = checkpoint['best_prec1']
-            model.load_state_dict(checkpoint['state_dict'])
+            model.load_state_dict(checkpoint['state_dict'], strict=False)
             print(("=> loaded checkpoint '{}' (epoch {})"
                   .format(args.evaluate, checkpoint['epoch'])))
         else:
@@ -85,7 +85,6 @@ def main():
     cudnn.benchmark = True
 
     normalize = GroupNormalize(input_mean, input_std)
-
 
 
     train_loader = torch.utils.data.DataLoader(

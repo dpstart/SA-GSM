@@ -1,1 +1,1 @@
-python main.py something-v1 RGB  --arch BNInception --num_segments 8 --consensus_type avg --batch-size 12 --iter_size 2 --dropout 0.5  --lr 0.1 --warmup 10 --epochs 30 --eval-freq 4  --gd 20 --run_iter "$1" -j 16 --npb --gsm
+python main.py something-v1 RGB  --arch BNInception --num_segments 8 --consensus_type avg --batch-size 12 --iter_size 2 --dropout 0.5  --lr 0.01 --warmup 10 --epochs 15 --eval-freq 2  --gd 20 --run_iter "$1" -j 16 --npb --gsm
